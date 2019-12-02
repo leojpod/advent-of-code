@@ -1,0 +1,24 @@
+{
+  "name": "advent-of-code",
+  "version": "1.0.0",
+  "description": "my very lame attempt at doing the advent of code",
+  "main": "index.js",
+  "scripts": {
+    "start": "elm make src/Main.elm --output src/elm.js > /dev/null && src/main.js "
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leojpod/advent-of-code.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/leojpod/advent-of-code/issues"
+  },
+  "homepage": "https://github.com/leojpod/advent-of-code#readme",
+  "dependencies": {
+    "elm-format": "^0.8.2",
+    "eslint": "^6.7.2",
+    "pretty": "^2.0.0",
+    "standard": "^14.3.1"
+  }
+}
