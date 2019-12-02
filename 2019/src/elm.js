@@ -2788,11 +2788,6 @@ var $elm$core$Result$isOk = function (result) {
 };
 var $elm$json$Json$Decode$andThen = _Json_andThen;
 var $elm$json$Json$Decode$field = _Json_decodeField;
-var $elm$core$Basics$composeR = F3(
-	function (f, g, x) {
-		return g(
-			f(x));
-	});
 var $elm$core$List$foldrHelper = F4(
 	function (fn, acc, ctr, ls) {
 		if (!ls.b) {
@@ -2862,21 +2857,49 @@ var $elm$core$List$map = F2(
 			_List_Nil,
 			xs);
 	});
+var $elm$core$Basics$composeR = F3(
+	function (f, g, x) {
+		return g(
+			f(x));
+	});
+var $author$project$Dec01$FuelConsumption$weightToFuelWeight = function (weight) {
+	return ((weight / 3) | 0) - 2;
+};
+function $author$project$Dec01$FuelConsumption$cyclic$improvedWeightToFuelWeight() {
+	return A2(
+		$elm$core$Basics$composeR,
+		$author$project$Dec01$FuelConsumption$weightToFuelWeight,
+		function (weight) {
+			return (weight <= 0) ? 0 : (weight + $author$project$Dec01$FuelConsumption$cyclic$improvedWeightToFuelWeight()(weight));
+		});
+}
+try {
+	var $author$project$Dec01$FuelConsumption$improvedWeightToFuelWeight = $author$project$Dec01$FuelConsumption$cyclic$improvedWeightToFuelWeight();
+	$author$project$Dec01$FuelConsumption$cyclic$improvedWeightToFuelWeight = function () {
+		return $author$project$Dec01$FuelConsumption$improvedWeightToFuelWeight;
+	};
+} catch ($) {
+	throw 'Some top-level definitions from `Dec01.FuelConsumption` are causing infinite recursion:\n\n  ┌─────┐\n  │    improvedWeightToFuelWeight\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
+var $elm$core$Debug$log = _Debug_log;
+var $author$project$Dec01$FuelConsumption$moduleFuelRequirements = function (shouldCountFuelsOwnWeight) {
+	return A2($elm$core$Debug$log, 'shouldCountFuelsOwnWeight -> ', shouldCountFuelsOwnWeight) ? $author$project$Dec01$FuelConsumption$improvedWeightToFuelWeight : $author$project$Dec01$FuelConsumption$weightToFuelWeight;
+};
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $author$project$Ports$print = _Platform_outgoingPort('print', $elm$json$Json$Encode$string);
 var $elm$core$List$sum = function (numbers) {
 	return A3($elm$core$List$foldl, $elm$core$Basics$add, 0, numbers);
 };
-var $author$project$Dec01$FuelConsumption$calculator = A2(
-	$elm$core$Basics$composeR,
-	$elm$core$List$map(
-		function (weight) {
-			return ((weight / 3) | 0) - 2;
-		}),
-	A2(
-		$elm$core$Basics$composeR,
-		$elm$core$List$sum,
-		A2($elm$core$Basics$composeR, $elm$core$String$fromInt, $author$project$Ports$print)));
+var $author$project$Dec01$FuelConsumption$calculator = function (_v0) {
+	var shouldCountFuelsOwnWeight = _v0.shouldCountFuelsOwnWeight;
+	var modules = _v0.modules;
+	return $author$project$Ports$print(
+		$elm$core$String$fromInt(
+			$elm$core$List$sum(
+				A2(
+					$elm$core$List$map,
+					$author$project$Dec01$FuelConsumption$moduleFuelRequirements(shouldCountFuelsOwnWeight),
+					modules))));
+};
 var $author$project$Main$init = F2(
 	function (_v0, options) {
 		var input = options.a;
@@ -2956,6 +2979,10 @@ var $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$map = F2(
 					$elm$core$Tuple$mapSecond(mapFunction))),
 			optionsParser);
 	});
+var $author$project$Dec01$FuelConsumption$Input = F2(
+	function (shouldCountFuelsOwnWeight, modules) {
+		return {modules: modules, shouldCountFuelsOwnWeight: shouldCountFuelsOwnWeight};
+	});
 var $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$buildSubCommand = F2(
 	function (subCommandName, cliOptionsConstructor) {
 		return $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$OptionsParser(
@@ -2990,6 +3017,85 @@ var $elm_community$result_extra$Result$Extra$combine = A2(
 	$elm$core$List$foldr,
 	$elm$core$Result$map2($elm$core$List$cons),
 	$elm$core$Result$Ok(_List_Nil));
+var $dillonkearns$elm_cli_options_parser$Tokenizer$Flag = {$: 'Flag'};
+var $dillonkearns$elm_cli_options_parser$Occurences$Optional = {$: 'Optional'};
+var $dillonkearns$elm_cli_options_parser$Tokenizer$ParsedOption = F2(
+	function (a, b) {
+		return {$: 'ParsedOption', a: a, b: b};
+	});
+var $dillonkearns$elm_cli_options_parser$Cli$Option$Option = function (a) {
+	return {$: 'Option', a: a};
+};
+var $dillonkearns$elm_cli_options_parser$Cli$Decode$Decoder = function (a) {
+	return {$: 'Decoder', a: a};
+};
+var $dillonkearns$elm_cli_options_parser$Cli$Decode$decoder = $dillonkearns$elm_cli_options_parser$Cli$Decode$Decoder(
+	function (value) {
+		return $elm$core$Result$Ok(
+			_Utils_Tuple2(_List_Nil, value));
+	});
+var $dillonkearns$elm_cli_options_parser$Cli$Option$buildOption = F2(
+	function (dataGrabber, usageSpec) {
+		return $dillonkearns$elm_cli_options_parser$Cli$Option$Option(
+			{dataGrabber: dataGrabber, decoder: $dillonkearns$elm_cli_options_parser$Cli$Decode$decoder, usageSpec: usageSpec});
+	});
+var $dillonkearns$elm_cli_options_parser$Cli$UsageSpec$Flag = function (a) {
+	return {$: 'Flag', a: a};
+};
+var $dillonkearns$elm_cli_options_parser$Cli$UsageSpec$FlagOrKeywordArg = F3(
+	function (a, b, c) {
+		return {$: 'FlagOrKeywordArg', a: a, b: b, c: c};
+	});
+var $dillonkearns$elm_cli_options_parser$Cli$UsageSpec$flag = F2(
+	function (flagName, occurences) {
+		return A3(
+			$dillonkearns$elm_cli_options_parser$Cli$UsageSpec$FlagOrKeywordArg,
+			$dillonkearns$elm_cli_options_parser$Cli$UsageSpec$Flag(flagName),
+			$elm$core$Maybe$Nothing,
+			occurences);
+	});
+var $elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var $elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			$elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var $dillonkearns$elm_cli_options_parser$Cli$Option$flag = function (flagName) {
+	return A2(
+		$dillonkearns$elm_cli_options_parser$Cli$Option$buildOption,
+		function (_v0) {
+			var options = _v0.options;
+			return A2(
+				$elm$core$List$member,
+				A2($dillonkearns$elm_cli_options_parser$Tokenizer$ParsedOption, flagName, $dillonkearns$elm_cli_options_parser$Tokenizer$Flag),
+				options) ? $elm$core$Result$Ok(true) : $elm$core$Result$Ok(false);
+		},
+		A2($dillonkearns$elm_cli_options_parser$Cli$UsageSpec$flag, flagName, $dillonkearns$elm_cli_options_parser$Occurences$Optional));
+};
 var $elm$core$Result$fromMaybe = F2(
 	function (err, maybe) {
 		if (maybe.$ === 'Just') {
@@ -3019,22 +3125,6 @@ var $dillonkearns$elm_cli_options_parser$Cli$Validate$predicate = F2(
 			function (boolResult) {
 				return boolResult ? $dillonkearns$elm_cli_options_parser$Cli$Validate$Valid : $dillonkearns$elm_cli_options_parser$Cli$Validate$Invalid(message);
 			});
-	});
-var $dillonkearns$elm_cli_options_parser$Cli$Option$Option = function (a) {
-	return {$: 'Option', a: a};
-};
-var $dillonkearns$elm_cli_options_parser$Cli$Decode$Decoder = function (a) {
-	return {$: 'Decoder', a: a};
-};
-var $dillonkearns$elm_cli_options_parser$Cli$Decode$decoder = $dillonkearns$elm_cli_options_parser$Cli$Decode$Decoder(
-	function (value) {
-		return $elm$core$Result$Ok(
-			_Utils_Tuple2(_List_Nil, value));
-	});
-var $dillonkearns$elm_cli_options_parser$Cli$Option$buildOption = F2(
-	function (dataGrabber, usageSpec) {
-		return $dillonkearns$elm_cli_options_parser$Cli$Option$Option(
-			{dataGrabber: dataGrabber, decoder: $dillonkearns$elm_cli_options_parser$Cli$Decode$decoder, usageSpec: usageSpec});
 	});
 var $elm$core$List$drop = F2(
 	function (n, list) {
@@ -3273,16 +3363,6 @@ var $dillonkearns$elm_cli_options_parser$Cli$Option$validateMap = F2(
 			},
 			option);
 	});
-var $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$withDoc = F2(
-	function (docString, _v0) {
-		var optionsParserRecord = _v0.a;
-		return $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$OptionsParser(
-			_Utils_update(
-				optionsParserRecord,
-				{
-					description: $elm$core$Maybe$Just(docString)
-				}));
-	});
 var $dillonkearns$elm_cli_options_parser$Cli$Decode$decodeFunction = function (_v0) {
 	var decodeFn = _v0.a;
 	return decodeFn;
@@ -3358,6 +3438,17 @@ var $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$withCommon = F2(
 				},
 				fullOptionsParser));
 	});
+var $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$with = $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$withCommon;
+var $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$withDoc = F2(
+	function (docString, _v0) {
+		var optionsParserRecord = _v0.a;
+		return $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$OptionsParser(
+			_Utils_update(
+				optionsParserRecord,
+				{
+					description: $elm$core$Maybe$Just(docString)
+				}));
+	});
 var $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$withRestArgs = $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$withCommon;
 var $author$project$Dec01$FuelConsumption$options = A3(
 	$elm$core$Basics$apL,
@@ -3380,9 +3471,12 @@ var $author$project$Dec01$FuelConsumption$options = A3(
 				A2($elm$core$Basics$composeR, $elm$core$List$isEmpty, $elm$core$Basics$not)),
 			$dillonkearns$elm_cli_options_parser$Cli$Option$restArgs('the modules\' weights for the rocket'))),
 	A2(
-		$dillonkearns$elm_cli_options_parser$Cli$OptionsParser$withDoc,
-		'run the fuel-consumption calculator',
-		A2($dillonkearns$elm_cli_options_parser$Cli$OptionsParser$buildSubCommand, 'fuel-consumption', $elm$core$Basics$identity)));
+		$dillonkearns$elm_cli_options_parser$Cli$OptionsParser$with,
+		$dillonkearns$elm_cli_options_parser$Cli$Option$flag('fuel-weight'),
+		A2(
+			$dillonkearns$elm_cli_options_parser$Cli$OptionsParser$withDoc,
+			'run the fuel-consumption calculator',
+			A2($dillonkearns$elm_cli_options_parser$Cli$OptionsParser$buildSubCommand, 'fuel-consumption', $author$project$Dec01$FuelConsumption$Input))));
 var $author$project$Main$programConfig = A2(
 	$dillonkearns$elm_cli_options_parser$Cli$Program$add,
 	A2($dillonkearns$elm_cli_options_parser$Cli$OptionsParser$map, $author$project$Main$FuelConsumption, $author$project$Dec01$FuelConsumption$options),
@@ -3678,36 +3772,6 @@ var $elm$core$List$head = function (list) {
 	}
 };
 var $dillonkearns$elm_cli_options_parser$Fuzzy$initialModel = _List_Nil;
-var $elm$core$List$any = F2(
-	function (isOkay, list) {
-		any:
-		while (true) {
-			if (!list.b) {
-				return false;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (isOkay(x)) {
-					return true;
-				} else {
-					var $temp$isOkay = isOkay,
-						$temp$list = xs;
-					isOkay = $temp$isOkay;
-					list = $temp$list;
-					continue any;
-				}
-			}
-		}
-	});
-var $elm$core$List$member = F2(
-	function (x, xs) {
-		return A2(
-			$elm$core$List$any,
-			function (a) {
-				return _Utils_eq(a, x);
-			},
-			xs);
-	});
 var $elm$core$List$partition = F2(
 	function (pred, list) {
 		var step = F2(
@@ -4403,30 +4467,10 @@ var $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$build = function (cli
 			usageSpecs: _List_Nil
 		});
 };
-var $dillonkearns$elm_cli_options_parser$Tokenizer$Flag = {$: 'Flag'};
 var $dillonkearns$elm_cli_options_parser$Cli$Decode$MatchError = function (a) {
 	return {$: 'MatchError', a: a};
 };
-var $dillonkearns$elm_cli_options_parser$Tokenizer$ParsedOption = F2(
-	function (a, b) {
-		return {$: 'ParsedOption', a: a, b: b};
-	});
 var $dillonkearns$elm_cli_options_parser$Occurences$Required = {$: 'Required'};
-var $dillonkearns$elm_cli_options_parser$Cli$UsageSpec$Flag = function (a) {
-	return {$: 'Flag', a: a};
-};
-var $dillonkearns$elm_cli_options_parser$Cli$UsageSpec$FlagOrKeywordArg = F3(
-	function (a, b, c) {
-		return {$: 'FlagOrKeywordArg', a: a, b: b, c: c};
-	});
-var $dillonkearns$elm_cli_options_parser$Cli$UsageSpec$flag = F2(
-	function (flagName, occurences) {
-		return A3(
-			$dillonkearns$elm_cli_options_parser$Cli$UsageSpec$FlagOrKeywordArg,
-			$dillonkearns$elm_cli_options_parser$Cli$UsageSpec$Flag(flagName),
-			$elm$core$Maybe$Nothing,
-			occurences);
-	});
 var $dillonkearns$elm_cli_options_parser$Cli$OptionsParser$expectFlag = F2(
 	function (flagName, _v0) {
 		var optionsParser = _v0.a;

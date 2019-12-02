@@ -6,3 +6,5 @@ repl-temp-*
 
 # input files
 **/**/input.txt
+# node shit
+**/**/node_modules

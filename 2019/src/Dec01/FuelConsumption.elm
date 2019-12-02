@@ -1,6 +1,7 @@
 module Dec01.FuelConsumption exposing
     ( Input
     , calculator
+    , improvedWeightToFuelWeight
     , options
     )
 
@@ -13,13 +14,16 @@ import Result.Extra
 
 
 type alias Input =
-    List Int
+    { shouldCountFuelsOwnWeight : Bool
+    , modules : List Int
+    }
 
 
 options : OptionsParser.OptionsParser Input BuilderState.NoMoreOptions
 options =
-    OptionsParser.buildSubCommand "fuel-consumption" identity
+    OptionsParser.buildSubCommand "fuel-consumption" Input
         |> OptionsParser.withDoc "run the fuel-consumption calculator"
+        |> OptionsParser.with (Option.flag "fuel-weight")
         |> (OptionsParser.withRestArgs <|
                 (Option.restArgs "the modules' weights for the rocket"
                     |> Option.validate (Validate.predicate "needs at least one module to be given" (List.isEmpty >> not))
@@ -31,9 +35,36 @@ options =
            )
 
 
+weightToFuelWeight : Int -> Int
+weightToFuelWeight weight =
+    weight // 3 - 2
+
+
+improvedWeightToFuelWeight : Int -> Int
+improvedWeightToFuelWeight =
+    weightToFuelWeight
+        >> (\weight ->
+                if weight <= 0 then
+                    0
+
+                else
+                    weight + improvedWeightToFuelWeight weight
+           )
+
+
+moduleFuelRequirements : Bool -> Int -> Int
+moduleFuelRequirements shouldCountFuelsOwnWeight =
+    if Debug.log "shouldCountFuelsOwnWeight -> " shouldCountFuelsOwnWeight then
+        improvedWeightToFuelWeight
+
+    else
+        weightToFuelWeight
+
+
 calculator : Input -> Cmd Never
-calculator =
-    List.map (\weight -> weight // 3 - 2)
-        >> List.sum
-        >> String.fromInt
-        >> Ports.print
+calculator { shouldCountFuelsOwnWeight, modules } =
+    modules
+        |> List.map (moduleFuelRequirements shouldCountFuelsOwnWeight)
+        |> List.sum
+        |> String.fromInt
+        |> Ports.print
