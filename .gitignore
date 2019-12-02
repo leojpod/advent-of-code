@@ -8,3 +8,5 @@ repl-temp-*
 **/**/input.txt
 # node shit
 **/**/node_modules
+# build file
+**/**/elm.js

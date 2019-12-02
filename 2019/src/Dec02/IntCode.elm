@@ -28,8 +28,8 @@ options =
     OptionsParser.buildSubCommand "int-code" Ok
         |> OptionsParser.withDoc "run the intCode computer"
         |> OptionsParser.with
-            (Option.requiredKeywordArg "instructions"
-                |> Option.map (String.split ", ")
+            (Option.requiredPositionalArg "instructions"
+                |> Option.map (String.split ",")
                 |> Option.validateMap
                     (List.map
                         (String.toInt
