@@ -1,4 +1,11 @@
-module Dec03.WireLogo exposing (Move(..), Path, options, pathFromMoves, run)
+module Dec03.WireLogo exposing
+    ( Move(..)
+    , Path
+    , options
+    , pathFromMoves
+    , run
+    , runPart2
+    )
 
 import Cli.Option as Option
 import Cli.OptionsParser as OptionsParser
@@ -65,9 +72,9 @@ pathFromMoves =
         >> List.reverse
 
 
-options : OptionsParser.OptionsParser (List (List Move)) BuilderState.AnyOptions
-options =
-    OptionsParser.buildSubCommand "wire-crossing" identity
+options : String -> OptionsParser.OptionsParser (List (List Move)) BuilderState.AnyOptions
+options cmdName =
+    OptionsParser.buildSubCommand cmdName identity
         |> OptionsParser.withDoc "run the wire-crossing detection algo-thingy"
         |> OptionsParser.with
             (Option.requiredPositionalArg "wires-moves"
@@ -145,4 +152,41 @@ run =
                                         Just solution ->
                                             Ports.printAndExitSuccess <| String.fromInt solution
                                )
+           )
+
+
+runPart2 : List (List Move) -> Cmd Never
+runPart2 =
+    List.map pathFromMoves
+        >> List.map (List.drop 1)
+        >> (\paths ->
+                List.map Set.fromList paths
+                    |> List.Extra.uncons
+                    |> Maybe.map
+                        (\( firstPaths, restOfThem ) ->
+                            restOfThem
+                                |> List.foldl
+                                    Set.intersect
+                                    firstPaths
+                        )
+                    |> (\potentialIntersections ->
+                            case potentialIntersections of
+                                Nothing ->
+                                    Ports.printAndExitFailure "I need more than one path to find intersections"
+
+                                Just intersections ->
+                                    intersections
+                                        |> Set.map
+                                            (\position ->
+                                                paths
+                                                    |> List.map (List.Extra.elemIndex position >> Maybe.withDefault 0)
+                                                    |> List.sum
+                                            )
+                                        |> Set.toList
+                                        |> List.head
+                                        |> Maybe.withDefault 0
+                                        |> (+) (List.length paths)
+                                        |> String.fromInt
+                                        |> Ports.printAndExitSuccess
+                       )
            )
