@@ -4,6 +4,7 @@ import Cli.OptionsParser as OptionsParser
 import Cli.Program as Program
 import Dec01.FuelConsumption
 import Dec02.IntCode
+import Dec03.WireLogo
 import Ports
 
 
@@ -15,6 +16,7 @@ type AdventOptions
     = FuelConsumption Dec01.FuelConsumption.Input
     | IntCode Dec02.IntCode.State
     | IntCodeBis Dec02.IntCode.IntCode
+    | WireCrossing (List (List Dec03.WireLogo.Move))
 
 
 programConfig : Program.Config AdventOptions
@@ -23,6 +25,7 @@ programConfig =
         |> Program.add (OptionsParser.map FuelConsumption Dec01.FuelConsumption.options)
         |> Program.add (OptionsParser.map IntCode Dec02.IntCode.options)
         |> Program.add (OptionsParser.map IntCodeBis Dec02.IntCode.optionsPart2)
+        |> Program.add (OptionsParser.map WireCrossing Dec03.WireLogo.options)
 
 
 init : Flags -> AdventOptions -> Cmd Never
@@ -41,6 +44,9 @@ init _ options =
 
                 Err msg ->
                     Ports.printAndExitFailure msg
+
+        WireCrossing wireMoves ->
+            Dec03.WireLogo.run wireMoves
 
 
 main : Program.StatelessProgram Never {}
