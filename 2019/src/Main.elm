@@ -14,6 +14,7 @@ type alias Flags =
 type AdventOptions
     = FuelConsumption Dec01.FuelConsumption.Input
     | IntCode Dec02.IntCode.State
+    | IntCodeBis Dec02.IntCode.IntCode
 
 
 programConfig : Program.Config AdventOptions
@@ -21,6 +22,7 @@ programConfig =
     Program.config
         |> Program.add (OptionsParser.map FuelConsumption Dec01.FuelConsumption.options)
         |> Program.add (OptionsParser.map IntCode Dec02.IntCode.options)
+        |> Program.add (OptionsParser.map IntCodeBis Dec02.IntCode.optionsPart2)
 
 
 init : Flags -> AdventOptions -> Cmd Never
@@ -31,6 +33,14 @@ init _ options =
 
         IntCode state ->
             Dec02.IntCode.run state
+
+        IntCodeBis intCode ->
+            case Dec02.IntCode.findStartCode ( 0, 0 ) intCode of
+                Ok value ->
+                    String.fromInt value |> Ports.printAndExitSuccess
+
+                Err msg ->
+                    Ports.printAndExitFailure msg
 
 
 main : Program.StatelessProgram Never {}

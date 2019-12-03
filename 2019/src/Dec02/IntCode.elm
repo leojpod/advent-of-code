@@ -2,7 +2,9 @@ module Dec02.IntCode exposing
     ( Instruction(..)
     , IntCode
     , State(..)
+    , findStartCode
     , options
+    , optionsPart2
     , readInstruction
     , run
     , runNextInstruction
@@ -38,6 +40,24 @@ options =
                         >> Result.Extra.combine
                     )
                 |> Option.map (Array.fromList >> Array.set 1 12 >> Array.set 2 2 >> IntCode 0)
+            )
+
+
+optionsPart2 : OptionsParser.OptionsParser IntCode BuilderState.AnyOptions
+optionsPart2 =
+    OptionsParser.buildSubCommand "int-code-bis" (IntCode 0)
+        |> OptionsParser.withDoc "run the intCode computer"
+        |> OptionsParser.with
+            (Option.requiredPositionalArg "instructions"
+                |> Option.map (String.split ",")
+                |> Option.validateMap
+                    (List.map
+                        (String.toInt
+                            >> Result.fromMaybe "This is not a valid instruction"
+                        )
+                        >> Result.Extra.combine
+                    )
+                |> Option.map Array.fromList
             )
 
 
@@ -200,3 +220,41 @@ run state =
                     Ok _ ->
                         Ports.printAndExitFailure "snafu ... "
            )
+
+
+findStartCode : ( Int, Int ) -> IntCode -> Result String Int
+findStartCode ( a, b ) { memory } =
+    let
+        intCode =
+            memory
+                |> Array.set 1 a
+                |> Array.set 2 b
+                |> IntCode 0
+
+        ( nextA, nextB ) =
+            case ( a, b ) of
+                ( 99, 99 ) ->
+                    ( 99, 99 )
+
+                ( _, 99 ) ->
+                    ( a + 1, 0 )
+
+                ( _, _ ) ->
+                    ( a, b + 1 )
+    in
+    if a == 99 && b == 99 then
+        Result.Err "couldn't find a matching pair that would yield the proper output"
+
+    else
+        case runner (Ok intCode) of
+            Err msg ->
+                Result.Err msg
+
+            Ok _ ->
+                Result.Err "snafu..."
+
+            Finished 19690720 ->
+                Result.Ok <| a * 100 + b
+
+            Finished _ ->
+                findStartCode ( nextA, nextB ) intCode
