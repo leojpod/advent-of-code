@@ -20,6 +20,7 @@ type AdventOptions
     | WireCrossing (List (List Dec03.WireLogo.Move))
     | WireCrossingBis (List (List Dec03.WireLogo.Move))
     | PasswordFinder Dec04.PasswordFinder.PasswordFinderOptions
+    | PasswordFinderBis Dec04.PasswordFinder.PasswordFinderOptions
 
 
 programConfig : Program.Config AdventOptions
@@ -30,7 +31,8 @@ programConfig =
         |> Program.add (OptionsParser.map IntCodeBis Dec02.IntCode.optionsPart2)
         |> Program.add (OptionsParser.map WireCrossing <| Dec03.WireLogo.options "wire-crossing")
         |> Program.add (OptionsParser.map WireCrossingBis <| Dec03.WireLogo.options "wire-crossing-2")
-        |> Program.add (OptionsParser.map PasswordFinder <| Dec04.PasswordFinder.options)
+        |> Program.add (OptionsParser.map PasswordFinder <| Dec04.PasswordFinder.options "password-finder")
+        |> Program.add (OptionsParser.map PasswordFinderBis <| Dec04.PasswordFinder.options "password-finder-2")
 
 
 init : Flags -> AdventOptions -> Cmd Never
@@ -58,6 +60,9 @@ init _ options =
 
         PasswordFinder boundaries ->
             Dec04.PasswordFinder.run boundaries
+
+        PasswordFinderBis boundaries ->
+            Dec04.PasswordFinder.run2 boundaries
 
 
 main : Program.StatelessProgram Never {}

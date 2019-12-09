@@ -2,6 +2,7 @@ module Dec04.PasswordFinder exposing
     ( PasswordFinderOptions
     , options
     , run
+    , run2
     )
 
 import Cli.Option as Option
@@ -18,9 +19,9 @@ type alias PasswordFinderOptions =
     }
 
 
-options : OptionsParser.OptionsParser PasswordFinderOptions BuilderState.AnyOptions
-options =
-    OptionsParser.buildSubCommand "password-finder" PasswordFinderOptions
+options : String -> OptionsParser.OptionsParser PasswordFinderOptions BuilderState.AnyOptions
+options name =
+    OptionsParser.buildSubCommand name PasswordFinderOptions
         |> OptionsParser.withDoc "find out how many password matches from criteria within a given range"
         |> OptionsParser.with
             (Option.requiredPositionalArg "from"
@@ -43,6 +44,15 @@ run { from, to } =
         )
         to
         []
+        |> List.length
+        |> String.fromInt
+        |> Ports.printAndExitSuccess
+
+
+run2 : PasswordFinderOptions -> Cmd Never
+run2 { from, to } =
+    List.range from to
+        |> List.filter isValidPasswordCandidate2
         |> List.length
         |> String.fromInt
         |> Ports.printAndExitSuccess
@@ -74,6 +84,18 @@ isValidPasswordCandidate =
                     tails
                     |> (\( _, neverDecrease, hasDouble ) -> neverDecrease && hasDouble)
             )
+
+
+isValidPasswordCandidate2 : Int -> Bool
+isValidPasswordCandidate2 =
+    fromIntToListDigits
+        >> (\digits ->
+                (List.Extra.groupWhile (<=) digits |> List.length |> (==) 1)
+                    && (List.Extra.group digits
+                            |> List.any
+                                (Tuple.second >> List.length >> (==) 1)
+                       )
+           )
 
 
 generatePotentialPasswords : Int -> Int -> List Int -> List Int
