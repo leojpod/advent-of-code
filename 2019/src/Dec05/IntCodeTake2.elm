@@ -26,10 +26,15 @@ type State
     | Finished Int
 
 
-options : OptionsParser.OptionsParser State BuilderState.AnyOptions
+options : OptionsParser.OptionsParser ( Int, State ) BuilderState.AnyOptions
 options =
-    OptionsParser.buildSubCommand "diagnostic" Ok
+    OptionsParser.buildSubCommand "diagnostic" Tuple.pair
         |> OptionsParser.withDoc "run the intCode computer"
+        |> OptionsParser.with
+            (Option.requiredPositionalArg "input-value"
+                |> Option.validateMap
+                    (String.toInt >> Result.fromMaybe "this is not a valid input value")
+            )
         |> OptionsParser.with
             (Option.requiredPositionalArg "instructions"
                 |> Option.map (String.split ",")
@@ -40,7 +45,7 @@ options =
                         )
                         >> Result.Extra.combine
                     )
-                |> Option.map (Array.fromList >> IntCode 0)
+                |> Option.map (Array.fromList >> IntCode 0 >> Ok)
             )
 
 
@@ -87,6 +92,10 @@ type Instruction
     | Multiply ( OpMode, Int ) ( OpMode, Int ) Int
     | Input Int
     | Output ( OpMode, Int )
+    | JumpIfTrue ( OpMode, Int ) ( OpMode, Int )
+    | JumpIfFalse ( OpMode, Int ) ( OpMode, Int )
+    | LessThan ( OpMode, Int ) ( OpMode, Int ) Int
+    | Equals ( OpMode, Int ) ( OpMode, Int ) Int
     | Exit
 
 
@@ -110,9 +119,6 @@ readInstruction ({ pointer, memory } as intCode) =
         |> Result.andThen
             (\instructionCode ->
                 let
-                    _ =
-                        Debug.log "instructionCode -> " ( pointer, instructionCode )
-
                     opCode =
                         modBy 100 instructionCode
 
@@ -230,6 +236,104 @@ readInstruction ({ pointer, memory } as intCode) =
                                 )
                             |> Result.map (\instruction -> ( instruction, { intCode | pointer = pointer + 2 } ))
 
+                    5 ->
+                        Result.map3
+                            (\firstMode secondMode thirdMode ->
+                                case thirdMode of
+                                    Immediate ->
+                                        Result.Err "the third paramter of a JumpIfTrue cannot be immediate"
+
+                                    Position ->
+                                        Result.Ok ( firstMode, secondMode )
+                            )
+                            firstOpMode
+                            secondOpMode
+                            thirdOpMode
+                            |> Result.andThen identity
+                            |> Result.andThen
+                                (\( firstMode, secondMode ) ->
+                                    Maybe.map2 JumpIfTrue
+                                        (Array.get (pointer + 1) memory |> Maybe.map (Tuple.pair firstMode))
+                                        (Array.get (pointer + 2) memory |> Maybe.map (Tuple.pair secondMode))
+                                        |> Result.fromMaybe
+                                            ("Error while accessing blocks following "
+                                                ++ String.fromInt pointer
+                                                ++ " to build a JumpIfTrue operation"
+                                            )
+                                )
+                            |> Result.map (\instruction -> ( instruction, { intCode | pointer = pointer + 3 } ))
+
+                    6 ->
+                        Result.map3
+                            (\firstMode secondMode thirdMode ->
+                                case thirdMode of
+                                    Immediate ->
+                                        Result.Err "the third paramter of a JumpIfFalse cannot be immediate"
+
+                                    Position ->
+                                        Result.Ok ( firstMode, secondMode )
+                            )
+                            firstOpMode
+                            secondOpMode
+                            thirdOpMode
+                            |> Result.andThen identity
+                            |> Result.andThen
+                                (\( firstMode, secondMode ) ->
+                                    Maybe.map2 JumpIfFalse
+                                        (Array.get (pointer + 1) memory |> Maybe.map (Tuple.pair firstMode))
+                                        (Array.get (pointer + 2) memory |> Maybe.map (Tuple.pair secondMode))
+                                        |> Result.fromMaybe
+                                            ("Error while accessing blocks following "
+                                                ++ String.fromInt pointer
+                                                ++ " to build a JumpIfFalse operation"
+                                            )
+                                )
+                            |> Result.map (\instruction -> ( instruction, { intCode | pointer = pointer + 3 } ))
+
+                    7 ->
+                        Result.map3
+                            (\firstMode secondMode thirdMode ->
+                                ( firstMode, secondMode, thirdMode )
+                            )
+                            firstOpMode
+                            secondOpMode
+                            thirdOpMode
+                            |> Result.andThen
+                                (\( firstMode, secondMode, _ ) ->
+                                    Maybe.map3 LessThan
+                                        (Array.get (pointer + 1) memory |> Maybe.map (Tuple.pair firstMode))
+                                        (Array.get (pointer + 2) memory |> Maybe.map (Tuple.pair secondMode))
+                                        (Array.get (pointer + 3) memory)
+                                        |> Result.fromMaybe
+                                            ("Error while accessing blocks following "
+                                                ++ String.fromInt pointer
+                                                ++ " to build a LessThan operation"
+                                            )
+                                        |> Result.map (\instruction -> ( instruction, { intCode | pointer = pointer + 4 } ))
+                                )
+
+                    8 ->
+                        Result.map3
+                            (\firstMode secondMode thirdMode ->
+                                ( firstMode, secondMode, thirdMode )
+                            )
+                            firstOpMode
+                            secondOpMode
+                            thirdOpMode
+                            |> Result.andThen
+                                (\( firstMode, secondMode, _ ) ->
+                                    Maybe.map3 Equals
+                                        (Array.get (pointer + 1) memory |> Maybe.map (Tuple.pair firstMode))
+                                        (Array.get (pointer + 2) memory |> Maybe.map (Tuple.pair secondMode))
+                                        (Array.get (pointer + 3) memory)
+                                        |> Result.fromMaybe
+                                            ("Error while accessing blocks following "
+                                                ++ String.fromInt pointer
+                                                ++ " to build a Equals operation"
+                                            )
+                                        |> Result.map (\instruction -> ( instruction, { intCode | pointer = pointer + 4 } ))
+                                )
+
                     99 ->
                         Result.Ok ( Exit, intCode )
 
@@ -239,22 +343,10 @@ readInstruction ({ pointer, memory } as intCode) =
 
 
 performOperation : IntCode -> ( OpMode, Int ) -> ( OpMode, Int ) -> Int -> (Int -> Int -> Int) -> Result String IntCode
-performOperation ({ memory } as intCode) ( firstOpMode, firstOp ) ( secondOpMode, secondOp ) resultAddress operation =
+performOperation ({ memory } as intCode) firstArg secondArg resultAddress operation =
     Maybe.map2 operation
-        (case firstOpMode of
-            Immediate ->
-                Just firstOp
-
-            Position ->
-                Array.get firstOp memory
-        )
-        (case secondOpMode of
-            Immediate ->
-                Just secondOp
-
-            Position ->
-                Array.get secondOp memory
-        )
+        (getArgumentValue firstArg memory)
+        (getArgumentValue secondArg memory)
         |> Result.fromMaybe "Error cannot acccess memory address for the operands"
         |> Result.andThen
             (\res ->
@@ -268,9 +360,19 @@ performOperation ({ memory } as intCode) ( firstOpMode, firstOp ) ( secondOpMode
         |> Result.map (\newMemory -> { intCode | memory = newMemory })
 
 
+getArgumentValue : ( OpMode, Int ) -> Array Int -> Maybe Int
+getArgumentValue ( mode, operand ) memory =
+    case mode of
+        Immediate ->
+            Just operand
+
+        Position ->
+            Array.get operand memory
+
+
 {--}
-runNextInstruction : IntCode -> ( State, Cmd Never )
-runNextInstruction intCode =
+runNextInstruction : Int -> IntCode -> ( State, Cmd Never )
+runNextInstruction inputValue intCode =
     case readInstruction intCode of
         Result.Ok ( instruction, { memory } as intCode_ ) ->
             case instruction of
@@ -288,22 +390,82 @@ runNextInstruction intCode =
 
                 Input address ->
                     -- Note for now this is hardcoded
-                    ( Array.set address 1 memory
+                    ( Array.set address inputValue memory
                         |> (\newMemory -> { intCode_ | memory = newMemory })
                         |> Ok
                     , Cmd.none
                     )
 
-                Output ( mode, operand ) ->
+                Output argument ->
                     ( Ok intCode_
-                    , (case mode of
-                        Immediate ->
-                            Just operand
-
-                        Position ->
-                            Array.get operand memory
-                      )
+                    , getArgumentValue argument memory
                         |> Maybe.Extra.unwrap Cmd.none (String.fromInt >> Ports.print)
+                    )
+
+                JumpIfTrue firstArg secondArg ->
+                    ( Maybe.map2
+                        (\firstValue destination ->
+                            if firstValue /= 0 then
+                                { intCode_ | pointer = destination }
+
+                            else
+                                intCode_
+                        )
+                        (getArgumentValue firstArg memory)
+                        (getArgumentValue secondArg memory)
+                        |> Result.fromMaybe "something went wrong while evaluating the JumpIfTrue operation"
+                        |> fromResult
+                    , Cmd.none
+                    )
+
+                JumpIfFalse firstArg secondArg ->
+                    ( Maybe.map2
+                        (\firstValue destination ->
+                            if firstValue == 0 then
+                                { intCode_ | pointer = destination }
+
+                            else
+                                intCode_
+                        )
+                        (getArgumentValue firstArg memory)
+                        (getArgumentValue secondArg memory)
+                        |> Result.fromMaybe "something went wrong while evaluating the JumpIfFalse operation"
+                        |> fromResult
+                    , Cmd.none
+                    )
+
+                LessThan firstArg secondArg destination ->
+                    ( Maybe.map2
+                        (\firstValue secondValue ->
+                            if firstValue < secondValue then
+                                Array.set destination 1 memory
+
+                            else
+                                Array.set destination 0 memory
+                        )
+                        (getArgumentValue firstArg memory)
+                        (getArgumentValue secondArg memory)
+                        |> Result.fromMaybe "something went wrong while evaluating the LessThan operation"
+                        |> Result.map (\newMemory -> { intCode_ | memory = newMemory })
+                        |> fromResult
+                    , Cmd.none
+                    )
+
+                Equals firstArg secondArg destination ->
+                    ( Maybe.map2
+                        (\firstValue secondValue ->
+                            if firstValue == secondValue then
+                                Array.set destination 1 memory
+
+                            else
+                                Array.set destination 0 memory
+                        )
+                        (getArgumentValue firstArg memory)
+                        (getArgumentValue secondArg memory)
+                        |> Result.fromMaybe "something went wrong while evaluating the Equal operation"
+                        |> Result.map (\newMemory -> { intCode_ | memory = newMemory })
+                        |> fromResult
+                    , Cmd.none
                     )
 
                 Exit ->
@@ -322,8 +484,8 @@ runNextInstruction intCode =
 
 
 {--}
-runner : ( State, Cmd Never ) -> ( State, Cmd Never )
-runner ( state, cmd ) =
+runner : Int -> ( State, Cmd Never ) -> ( State, Cmd Never )
+runner inputValue ( state, cmd ) =
     case state of
         Err msg ->
             ( Err msg, cmd )
@@ -332,14 +494,14 @@ runner ( state, cmd ) =
             ( Finished value, cmd )
 
         Ok intCode ->
-            runNextInstruction intCode
-                |> (\( newState, newCmd ) -> runner ( newState, Cmd.batch [ newCmd, cmd ] ))
+            runNextInstruction inputValue intCode
+                |> (\( newState, newCmd ) -> runner inputValue ( newState, Cmd.batch [ newCmd, cmd ] ))
 --}
 
 
-run : State -> Cmd Never
-run state =
-    runner ( state, Cmd.none )
+run : Int -> State -> Cmd Never
+run inputValue state =
+    runner inputValue ( state, Cmd.none )
         |> (\( finalState, cmd ) ->
                 case finalState of
                     Err msg ->

@@ -22,7 +22,7 @@ type AdventOptions
     | WireCrossingBis (List (List Dec03.WireLogo.Move))
     | PasswordFinder Dec04.PasswordFinder.PasswordFinderOptions
     | PasswordFinderBis Dec04.PasswordFinder.PasswordFinderOptions
-    | Diagnostic Dec05.IntCodeTake2.State
+    | Diagnostic ( Int, Dec05.IntCodeTake2.State )
 
 
 programConfig : Program.Config AdventOptions
@@ -67,8 +67,8 @@ init _ options =
         PasswordFinderBis boundaries ->
             Dec04.PasswordFinder.run2 boundaries
 
-        Diagnostic state ->
-            Dec05.IntCodeTake2.run state
+        Diagnostic ( inputValue, state ) ->
+            Dec05.IntCodeTake2.run inputValue state
 
 
 main : Program.StatelessProgram Never {}
