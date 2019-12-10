@@ -6,6 +6,7 @@ import Dec01.FuelConsumption
 import Dec02.IntCode
 import Dec03.WireLogo
 import Dec04.PasswordFinder
+import Dec05.IntCodeTake2
 import Ports
 
 
@@ -21,6 +22,7 @@ type AdventOptions
     | WireCrossingBis (List (List Dec03.WireLogo.Move))
     | PasswordFinder Dec04.PasswordFinder.PasswordFinderOptions
     | PasswordFinderBis Dec04.PasswordFinder.PasswordFinderOptions
+    | Diagnostic Dec05.IntCodeTake2.State
 
 
 programConfig : Program.Config AdventOptions
@@ -33,6 +35,7 @@ programConfig =
         |> Program.add (OptionsParser.map WireCrossingBis <| Dec03.WireLogo.options "wire-crossing-2")
         |> Program.add (OptionsParser.map PasswordFinder <| Dec04.PasswordFinder.options "password-finder")
         |> Program.add (OptionsParser.map PasswordFinderBis <| Dec04.PasswordFinder.options "password-finder-2")
+        |> Program.add (OptionsParser.map Diagnostic Dec05.IntCodeTake2.options)
 
 
 init : Flags -> AdventOptions -> Cmd Never
@@ -63,6 +66,9 @@ init _ options =
 
         PasswordFinderBis boundaries ->
             Dec04.PasswordFinder.run2 boundaries
+
+        Diagnostic state ->
+            Dec05.IntCodeTake2.run state
 
 
 main : Program.StatelessProgram Never {}
